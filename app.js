@@ -7,9 +7,14 @@ const path = require("path");
 const ExpressError = require("./utils/ExpressError")
 const session = require("express-session");
 const flash = require("connect-flash");
+const passport = require('passport')
+const LocalStrategy = require('passport-local')
+const User = require('./models/user')
 
-const testingsites = require('./routes/testingsites')
-const reviews = require('./routes/reviews')
+
+const userRoutes = require('./routes/users')
+const testingsiteRoutes = require('./routes/testingsites')
+const reviewRoutes = require('./routes/reviews')
 
 mongoose.connect("mongodb://localhost:27017/corona", {
     useNewUrlParser: true,
@@ -31,7 +36,6 @@ app.use(methodOverride("_method"));
 app.engine("ejs", ejsMate);
 app.use(express.static(path.join(__dirname, 'public')))
 
-
 const sessionConfig = {
     secret: 'thisisasecret!',
     resave: false,
@@ -45,15 +49,23 @@ const sessionConfig = {
 
 app.use(session(sessionConfig))
 app.use(flash())
+app.use(passport.initialize())
+app.use(passport.session())
+passport.use(new LocalStrategy(User.authenticate()))
+passport.serializeUser(User.serializeUser())
+passport.deserializeUser(User.deserializeUser())
 
 app.use((req, res, next) => {
+    console.log(req.session)
+    res.locals.currentUser = req.user;
     res.locals.success = req.flash('success')
     res.locals.error = req.flash('error')
     next()
 })
 
-app.use('/testingsites', testingsites)
-app.use('/testingsites/:id/reviews', reviews)
+app.use('/testingsites', testingsiteRoutes)
+app.use('/testingsites/:id/reviews', reviewRoutes)
+app.use('/', userRoutes)
 
 app.get("/", (req, res) => {
     res.render("home")
