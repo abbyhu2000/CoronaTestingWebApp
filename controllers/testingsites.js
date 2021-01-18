@@ -13,8 +13,10 @@ module.exports.renderNewForm = (req, res) => {
 module.exports.createTestingsite = async (req, res, next) => {
     //if (!req.body.testingsite) throw new ExpressError('Invalid Testing Site Data', 400);
     const testingsite = new Testingsite(req.body.testingsite);
+    testingsite.images = req.files.map(f => ({ url: f.path, filename: f.filename }))
     testingsite.author = req.user._id;
     await testingsite.save();
+    console.log(testingsite)
     req.flash('success', "Successfully made a new testing site!")
     res.redirect(`/testingsites/${testingsite._id}`)
 }
@@ -46,7 +48,11 @@ module.exports.renderEditForm = async (req, res) => {
 module.exports.updateTestingsite = async (req, res) => {
 
     const { id } = req.params;
+    console.log(req.body)
     const testingsite = await Testingsite.findByIdAndUpdate(id, { ...req.body.testingsite });
+    const imgs = req.files.map(f => ({ url: f.path, filename: f.filename }))
+    testingsite.images.push(...imgs)
+    await testingsite.save()
     req.flash('success', "Successfully update a testing site!")
     res.redirect(`/testingsites/${testingsite._id}`)
 }
